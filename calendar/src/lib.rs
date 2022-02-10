@@ -1,3 +1,5 @@
+use image::{ImageBuffer, GrayImage};
+use imageproc::drawing;
 use serde::{Deserialize, Serialize};
 /*
 "cityid": "101020100",
@@ -35,10 +37,41 @@ async fn get_weather(location:String, app_id: String, app_secret: String) -> Wea
     serde_json::from_str(&resp).expect("json decode error")
 }
 
+//屏幕长宽
+const WIDTH:u32 = 400;
+const HEIGHT:u32 = 300;
+//两种颜色
+const WHITE:image::Luma<u8> = image::Luma([255]);
+const BLACK:image::Luma<u8> = image::Luma([0]);
+
+//生成最终的图片序列
+fn generate_eink_bytes(img: &GrayImage)->Vec<u8>{
+    let mut r:Vec<u8> = Vec::with_capacity((HEIGHT*WIDTH/8) as usize);//存结果
+    for y in 0..HEIGHT {
+        for l in 0..WIDTH/8 {
+            let mut temp:u8 = 0;
+            for i in 0..8 {
+                let p:u8 = img.get_pixel(l*8+i,y)[0];
+                //匹配像素点颜色
+                let t = if p < 127 {0}else{1};
+                temp+=t<<(7-i);
+            }
+            r.push(temp);
+        }
+    }
+    r
+}
 
 pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: String) -> Vec<u8>{
+    //新建个图片当缓冲区
+    let mut img: GrayImage = ImageBuffer::new(WIDTH, HEIGHT);
+    //刷白
+    drawing::draw_filled_rect_mut(&mut img,imageproc::rect::Rect::at(0, 0).of_size(WIDTH, HEIGHT),WHITE);
+    //获取天气信息
     let weather = get_weather(location,app_id,app_secret).await;
-    vec![0x30,0x31,0x32,0x33]
+
+
+    generate_eink_bytes(&img)
 }
 
 
