@@ -1,5 +1,8 @@
+use std::io::Read;
+use lazy_static::lazy_static;
 use image::{ImageBuffer, GrayImage};
 use imageproc::drawing;
+use rusttype::{Font, Scale};
 use serde::{Deserialize, Serialize};
 /*
 "cityid": "101020100",
@@ -38,11 +41,32 @@ async fn get_weather(location:String, app_id: String, app_secret: String) -> Wea
 }
 
 //屏幕长宽
-const WIDTH:u32 = 400;
-const HEIGHT:u32 = 300;
+const WIDTH:u32 = 200;
+const HEIGHT:u32 = 200;
 //两种颜色
 const WHITE:image::Luma<u8> = image::Luma([255]);
 const BLACK:image::Luma<u8> = image::Luma([0]);
+
+//获取资源文件路径
+pub fn get_path() -> String{
+    let path = std::env::args().nth(2).unwrap_or(String::from("static/"));
+    if path.ends_with('/') || path.ends_with('\\') {
+        path
+    } else {
+        path + "/"
+    }
+}
+//加载字体文件
+fn load_font(path: String) -> Font<'static>{
+    let mut file = std::fs::File::open(&path).expect(&path);
+    let mut data = Vec::new();
+    file.read_to_end(&mut data).unwrap();
+    Font::try_from_vec(data).unwrap()
+}
+//静态加载字体
+lazy_static! {
+    static ref FONT_MI: Font<'static> = load_font(get_path() + "MiSans-Regular.ttf");
+}
 
 //生成最终的图片序列
 fn generate_eink_bytes(img: &GrayImage)->Vec<u8>{
@@ -70,7 +94,9 @@ pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: Strin
     //获取天气信息
     let weather = get_weather(location,app_id,app_secret).await;
 
+    drawing::draw_text_mut(&mut img, BLACK, 0,0, Scale {x: 22.0,y: 22.0 }, &FONT_MI,"测试");
 
+    //返回图片数据
     generate_eink_bytes(&img)
 }
 

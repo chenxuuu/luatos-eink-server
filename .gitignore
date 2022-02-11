@@ -11,3 +11,6 @@ Cargo.lock
 
 #key数据
 *.key
+
+*.lnk
+*.ttf
