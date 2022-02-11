@@ -178,14 +178,18 @@ pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: Strin
     //let weather = get_weather(location,app_id,app_secret).await;
 
     //日期
-    drawing::draw_text_mut(&mut img, BLACK, 9,5, Scale {x: 55.0,y: 55.0 }, &FONT_SARASA,&time_now.day().to_string());
+    drawing::draw_text_mut(&mut img, BLACK, 100,0, Scale {x: 121.0,y: 121.0 }, &FONT_SARASA,&time_now.day().to_string());
+    //年月
+    drawing::draw_text_mut(&mut img, BLACK, 107,1, Scale {x: 21.0,y: 21.0 }, &FONT_SARASA,
+        &(time_now.year().to_string()+"年 "+&time_now.month().to_string()+"月")
+    );
     //农历时间
-    drawing::draw_text_mut(&mut img, BLACK, 10,2, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&get_lunar(&lunar_now));
-    //月份
-    let offset = if time_now.month() > 10 {17} else {21};
-    drawing::draw_text_mut(&mut img, BLACK, offset,50, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,MONTH_NAME[time_now.month0() as usize]);
+    drawing::draw_text_mut(&mut img, BLACK, 127,100, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&get_lunar(&lunar_now));
+    //日历的月份
+    let offset = if time_now.month() > 10 {17} else {20};
+    drawing::draw_text_mut(&mut img, BLACK, offset,139, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,MONTH_NAME[time_now.month0() as usize]);
     //日历
-    put_calender(&mut img,&time_now,0,61);
+    put_calender(&mut img,&time_now,0,150);
 
     //返回图片数据
     generate_eink_bytes(&img)
