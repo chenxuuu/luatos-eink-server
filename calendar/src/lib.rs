@@ -5,7 +5,7 @@ use image::{ImageBuffer, GrayImage};
 use imageproc::drawing;
 use rusttype::{Font, Scale};
 use serde::{Deserialize, Serialize};
-
+use lunardate::LunarDate;
 
 //屏幕长宽
 const WIDTH:u32 = 200;
@@ -49,7 +49,8 @@ fn load_sprit() -> Vec<ImageBuffer<image::Luma<u8>, Vec<u8>>> {
 }
 //静态加载字体
 lazy_static! {
-    static ref FONT_MI: Font<'static> = load_font(get_path() + "MiSans-Regular.ttf");
+    static ref FONT_SARASA: Font<'static> = load_font(get_path() + "sarasa-mono-sc-nerd-regular.ttf");
+    static ref FONT_PIXEL: Font<'static> = load_font(get_path() + "LanaPixel.ttf");
     static ref FONT_CALE: Vec<ImageBuffer<image::Luma<u8>, Vec<u8>>> = load_sprit();
 }
 
@@ -95,6 +96,19 @@ fn put_calender(img: &mut ImageBuffer<image::Luma<u8>, Vec<u8>>,time: &DateTime<
             put_calender_num(img,i+1,x+1+nx*9,y+10+ny*7,BLACK);
         }
     }
+}
+
+const LUNAR_MONTH : [&str; 12] = ["正","二","三","四","五","六","七","八","九","十","冬","腊"];
+const LUNAR_DAY : [&str; 30] = ["初一","初二","初三","初四","初五","初六","初七","初八","初九","初十","十一","十二","十三","十四","十五",
+"十六","十七","十八","十九","二十","廿一","廿二","廿三","廿四","廿五","廿六","廿七","廿八","廿九","三十"];
+const MONTH_NAME : [&str; 12] = ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
+//获取当天的农历日期
+fn get_lunar(time: &LunarDate) -> String {
+    let mut r = String::new();
+    r.push_str(LUNAR_MONTH[time.month() as usize - 1]);
+    r.push_str("月");
+    r.push_str(LUNAR_DAY[time.day() as usize - 1]);
+    r
 }
 
 /*
@@ -155,16 +169,23 @@ fn generate_eink_bytes(img: &GrayImage)->Vec<u8>{
 pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: String) -> Vec<u8>{
     //获取当前时间
     let time_now = chrono::Local::now();
+    let lunar_now = LunarDate::from_solar_date(time_now.year(),time_now.month(),time_now.day()).unwrap();
     //新建个图片当缓冲区
     let mut img: GrayImage = ImageBuffer::new(WIDTH, HEIGHT);
     //刷白
     drawing::draw_filled_rect_mut(&mut img,imageproc::rect::Rect::at(0, 0).of_size(WIDTH, HEIGHT),WHITE);
     //获取天气信息
-    let weather = get_weather(location,app_id,app_secret).await;
+    //let weather = get_weather(location,app_id,app_secret).await;
 
-    //drawing::draw_text_mut(&mut img, BLACK, 0,0, Scale {x: 22.0,y: 22.0 }, &FONT_MI,"测试");
-
-    put_calender(&mut img,&time_now,10,10);
+    //日期
+    drawing::draw_text_mut(&mut img, BLACK, 9,5, Scale {x: 55.0,y: 55.0 }, &FONT_SARASA,&time_now.day().to_string());
+    //农历时间
+    drawing::draw_text_mut(&mut img, BLACK, 10,2, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&get_lunar(&lunar_now));
+    //月份
+    let offset = if time_now.month() > 10 {17} else {21};
+    drawing::draw_text_mut(&mut img, BLACK, offset,50, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,MONTH_NAME[time_now.month0() as usize]);
+    //日历
+    put_calender(&mut img,&time_now,0,61);
 
     //返回图片数据
     generate_eink_bytes(&img)
