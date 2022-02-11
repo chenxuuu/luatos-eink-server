@@ -23,8 +23,8 @@ namespace picDataConvert
             InitializeComponent();
         }
 
-
-        private static Bitmap outBmp = new Bitmap(1000, 1000);
+        private static int size = 1;//缩放倍数
+        private static Bitmap outBmp = new Bitmap(200 * size, 200 * size);
         private static Graphics g = Graphics.FromImage(outBmp);
         private void button2_Click(object sender, EventArgs e)
         {
@@ -58,10 +58,10 @@ namespace picDataConvert
                     switch (bit)
                     {
                         case 0:
-                            g.FillRectangle(Brushes.Black, (x + b) * 5, y * 5, 5, 5);
+                            g.FillRectangle(Brushes.Black, (x + b) * size, y * size, size, size);
                             break;
                         case 1:
-                            g.FillRectangle(Brushes.White, (x + b) * 5, y * 5, 5, 5);
+                            g.FillRectangle(Brushes.White, (x + b) * size, y * size, size, size);
                             break;
                     }
                 }
@@ -69,5 +69,9 @@ namespace picDataConvert
             pictureBox2.Image = outBmp;
         }
 
+        private void button1_Click(object sender, EventArgs e)
+        {
+            pictureBox2.Image.Save("out.png");
+        }
     }
 }
