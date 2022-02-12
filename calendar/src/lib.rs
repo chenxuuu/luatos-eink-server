@@ -76,12 +76,12 @@ fn put_calender(img: &mut ImageBuffer<image::Luma<u8>, Vec<u8>>,time: &DateTime<
             NaiveDate::from_ymd(time.year(), time.month() + 1, 1)
         }.signed_duration_since(NaiveDate::from_ymd(time.year(), time.month(), 1))
         .num_days() as u32;
-    put_calender_font(img,16,x+1,y);//周日
+    //画上星期
+    drawing::draw_filled_rect_mut(img, imageproc::rect::Rect::at(x as i32, y as i32).of_size(63, 9), BLACK);
+    put_calender_font(img,16,x+1,y+1);//周日
     for i in 10..16 {//周一到周六
-        put_calender_font(img,i,1+9+x+((i-10)*9) as u32,y);
+        put_calender_font(img,i,1+9+x+((i-10)*9) as u32,y+1);
     }
-    //画一根线
-    drawing::draw_line_segment_mut(img, (x as f32,(y+8) as f32), ((x+7*9-1) as f32,(y+8) as f32), BLACK);
     //每个日期都画上去
     for i in 0..max {
         let place = i + start;
@@ -102,9 +102,10 @@ const LUNAR_MONTH : [&str; 12] = ["正","二","三","四","五","六","七","八
 const LUNAR_DAY : [&str; 30] = ["初一","初二","初三","初四","初五","初六","初七","初八","初九","初十","十一","十二","十三","十四","十五",
 "十六","十七","十八","十九","二十","廿一","廿二","廿三","廿四","廿五","廿六","廿七","廿八","廿九","三十"];
 const MONTH_NAME : [&str; 12] = ["一月","二月","三月","四月","五月","六月","七月","八月","九月","十月","十一月","十二月"];
+const WEEK_NAME : [&str; 7] = ["一","二","三","四","五","六","日"];
 //获取当天的农历日期
 fn get_lunar(time: &LunarDate) -> String {
-    let mut r = String::new();
+    let mut r = String::from("农历");
     r.push_str(LUNAR_MONTH[time.month() as usize - 1]);
     r.push_str("月");
     r.push_str(LUNAR_DAY[time.day() as usize - 1]);
@@ -174,22 +175,31 @@ pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: Strin
     let mut img: GrayImage = ImageBuffer::new(WIDTH, HEIGHT);
     //刷白
     drawing::draw_filled_rect_mut(&mut img,imageproc::rect::Rect::at(0, 0).of_size(WIDTH, HEIGHT),WHITE);
-    //获取天气信息
-    //let weather = get_weather(location,app_id,app_secret).await;
 
+    ///////////////// 日历部分 ///////////////////
     //日期
-    drawing::draw_text_mut(&mut img, BLACK, 100,0, Scale {x: 121.0,y: 121.0 }, &FONT_SARASA,&time_now.day().to_string());
+    drawing::draw_text_mut(&mut img, BLACK, 100,0, Scale {x: 121.0,y: 121.0 }, &FONT_SARASA,
+        &time_now.day().to_string());
     //年月
     drawing::draw_text_mut(&mut img, BLACK, 107,1, Scale {x: 21.0,y: 21.0 }, &FONT_SARASA,
         &(time_now.year().to_string()+"年 "+&time_now.month().to_string()+"月")
     );
+    //星期
+    drawing::draw_text_mut(&mut img, BLACK, 120,98, Scale {x: 30.0,y: 30.0 }, &FONT_SARASA,
+        &("星期".to_owned()+WEEK_NAME[time_now.weekday().num_days_from_monday() as usize]));
     //农历时间
-    drawing::draw_text_mut(&mut img, BLACK, 127,100, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&get_lunar(&lunar_now));
+    drawing::draw_text_mut(&mut img, BLACK, 3 + 135,128, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&get_lunar(&lunar_now));
     //日历的月份
-    let offset = if time_now.month() > 10 {17} else {20};
-    drawing::draw_text_mut(&mut img, BLACK, offset,139, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,MONTH_NAME[time_now.month0() as usize]);
+    let offset = if time_now.month() > 10 {19 + 135} else {22 + 135};
+    drawing::draw_text_mut(&mut img, BLACK, offset,140, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,
+        MONTH_NAME[time_now.month0() as usize]);
     //日历
-    put_calender(&mut img,&time_now,0,150);
+    put_calender(&mut img,&time_now,135,150);
+
+    ///////////////// 天气部分 ///////////////////////
+    //获取天气信息
+    //let weather = get_weather(location,app_id,app_secret).await;
+
 
     //返回图片数据
     generate_eink_bytes(&img)
