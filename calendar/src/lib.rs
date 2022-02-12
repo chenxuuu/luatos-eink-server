@@ -154,7 +154,7 @@ struct Weather {
     win_meter: String,
     air: String
 }
-async fn get_weather_day(location:String, app_id: String, app_secret: String) -> Weather {
+async fn get_weather_day(location: &str, app_id: &str, app_secret: &str) -> Weather {
     let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(5)).build().expect("http client build error");
     let resp = client.get(&format!(
         "https://www.yiketianqi.com/free/day?appid={}&appsecret={}&unescape=1&cityid={}",app_id,app_secret,location
@@ -166,26 +166,31 @@ async fn get_weather_day(location:String, app_id: String, app_secret: String) ->
 fn put_weather_day(img: &mut ImageBuffer<image::Luma<u8>, Vec<u8>>, w: &Weather) {
     //图标
     let icon = get_weather_img(&w.wea_img,80);
-    image::imageops::overlay(img, &icon, 6, 6);
+    image::imageops::overlay(img, &icon, 6, 3);
     //天气文字
-    drawing::draw_text_mut(img, BLACK, 60,78, Scale {x: 30.0,y: 30.0 }, &FONT_SARASA,&w.wea);
+    drawing::draw_text_mut(img, BLACK, 60,75, Scale {x: 30.0,y: 30.0 }, &FONT_SARASA,&w.wea);
     //温度
     let offset = match w.tem.len() {
         1 => 20,
         2 => 10,
         _ => 0
     };
+    let offset2 = match w.tem.len() {
+        1 => 40,
+        2 => 50,
+        _ => 60
+    };
     drawing::draw_text_mut(img, BLACK, offset,80, Scale {x: 50.0,y: 50.0 }, &FONT_SARASA,&w.tem);
-    drawing::draw_text_mut(img, BLACK, 60,100, Scale {x: 25.0,y: 25.0 }, &FONT_SOURCE,"℃");
+    drawing::draw_text_mut(img, BLACK, offset2,98, Scale {x: 25.0,y: 25.0 }, &FONT_SOURCE,"℃");
     //空气质量
     let mut color = BLACK;
     if w.air.parse::<u16>().unwrap() > 100 {
         color = WHITE;
-        drawing::draw_filled_rect_mut(img, imageproc::rect::Rect::at(79, 105).of_size(41, 21), BLACK);
+        drawing::draw_filled_rect_mut(img, imageproc::rect::Rect::at(79, 103).of_size(41, 21), BLACK);
     }
-    drawing::draw_text_mut(img, color, 80,106, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"空气质量");
-    drawing::draw_text_mut(img, color, 80,116, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"指数:");
-    drawing::draw_text_mut(img, color, 103,116, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.air);
+    drawing::draw_text_mut(img, color, 80,104, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"空气质量");
+    drawing::draw_text_mut(img, color, 80,114, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"指数:");
+    drawing::draw_text_mut(img, color, 103,114, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.air);
 }
 
 /*
@@ -220,12 +225,40 @@ struct WeatherWeekDay {
     win: String,
     win_speed: String,
 }
-async fn get_weather_week(location:String, app_id: String, app_secret: String) -> WeatherWeek {
+async fn get_weather_week(location: &str, app_id: &str, app_secret: &str) -> WeatherWeek {
     let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(5)).build().expect("http client build error");
     let resp = client.get(&format!(
         "https://www.yiketianqi.com/free/week?appid={}&appsecret={}&unescape=1&cityid={}",app_id,app_secret,location
     )).send().await.expect("http send error").text().await.expect("http recv error");
     serde_json::from_str(&resp).expect("json decode error")
+}
+//画当前天气
+fn put_weather_week(img: &mut ImageBuffer<image::Luma<u8>, Vec<u8>>, w: &WeatherWeek) {
+    //图标
+    image::imageops::overlay(img, &get_weather_img(&w.data[0].wea_img,40), 4, 136);
+    image::imageops::overlay(img, &get_weather_img(&w.data[1].wea_img,40), 4 + 40 + 4, 136);
+    image::imageops::overlay(img, &get_weather_img(&w.data[2].wea_img,40), 4 + 40 + 4 + 40 + 4, 136);
+    //三天
+    drawing::draw_filled_rect_mut(img, imageproc::rect::Rect::at(0, 126).of_size(134, 11), BLACK);
+    drawing::draw_text_mut(img, WHITE, 4 + 10,127, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"今天");
+    drawing::draw_text_mut(img, WHITE, 4 + 40 + 4 + 10,127, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"明天");
+    drawing::draw_text_mut(img, WHITE, 4 + 40 + 4 + 40 + 4 + 10,127, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"后天");
+    //温度
+    drawing::draw_text_mut(img, BLACK, 2,176, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"日");
+    drawing::draw_text_mut(img, BLACK, 2,188, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"夜");
+    let tem_img = image::open(get_path()+"tem.png").unwrap().to_luma8();
+    image::imageops::overlay(img, &tem_img, 4 + 28, 176);
+    image::imageops::overlay(img, &tem_img, 4 + 28, 188);
+    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 28, 176);
+    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 28, 188);
+    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 40 + 4 + 28, 176);
+    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 40 + 4 + 28, 188);
+    drawing::draw_text_mut(img, BLACK, 4 + 12,176, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[0].tem_day);
+    drawing::draw_text_mut(img, BLACK, 4 + 40 + 4 + 12,176, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[1].tem_day);
+    drawing::draw_text_mut(img, BLACK, 4 + 40 + 4 + 40 + 4 + 12,176, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[2].tem_day);
+    drawing::draw_text_mut(img, BLACK, 4 + 12,188, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[0].tem_night);
+    drawing::draw_text_mut(img, BLACK, 4 + 40 + 4 + 12,188, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[1].tem_night);
+    drawing::draw_text_mut(img, BLACK, 4 + 40 + 4 + 40 + 4 + 12,188, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[2].tem_night);
 }
 
 //生成最终的图片序列
@@ -277,9 +310,9 @@ pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: Strin
 
     ///////////////// 天气部分 ///////////////////////
     //今日天气信息
-    put_weather_day(&mut img,&get_weather_day(location,app_id,app_secret).await);
-    //let weather = get_weather_week(location,app_id,app_secret).await;
-    //info!("{:?}",weather);
+    put_weather_day(&mut img,&get_weather_day(&location,&app_id,&app_secret).await);
+    //三天天气信息
+    put_weather_week(&mut img,&get_weather_week(&location,&app_id,&app_secret).await);
 
     //返回图片数据
     generate_eink_bytes(&img)
