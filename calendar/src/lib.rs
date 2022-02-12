@@ -3,6 +3,7 @@ use chrono::{DateTime, Datelike, NaiveDate};
 use lazy_static::lazy_static;
 use image::{ImageBuffer, GrayImage};
 use imageproc::drawing;
+use log::info;
 use rusttype::{Font, Scale};
 use serde::{Deserialize, Serialize};
 use lunardate::LunarDate;
@@ -47,10 +48,23 @@ fn load_sprit() -> Vec<ImageBuffer<image::Luma<u8>, Vec<u8>>> {
     }
     r
 }
+//获取天气图片
+fn get_weather_img(name: &str, size: u32) -> ImageBuffer<image::Luma<u8>, Vec<u8>> {
+    let size = size.to_string();
+    let file = match image::open(get_path()+"icons/"+&size+"/"+&name.to_string()+".png") {
+        Ok(file) => file,
+        Err(_) => {
+            println!("not found!{}",name);
+            image::open(get_path()+"icons/"+&size+"/404.png").unwrap()
+        },
+    };
+    file.into_luma8()
+}
 //静态加载字体
 lazy_static! {
     static ref FONT_SARASA: Font<'static> = load_font(get_path() + "sarasa-mono-sc-nerd-regular.ttf");
     static ref FONT_PIXEL: Font<'static> = load_font(get_path() + "LanaPixel.ttf");
+    static ref FONT_SOURCE: Font<'static> = load_font(get_path() + "SourceHanSansCN-Regular.ttf");
     static ref FONT_CALE: Vec<ImageBuffer<image::Luma<u8>, Vec<u8>>> = load_sprit();
 }
 
@@ -140,7 +154,7 @@ struct Weather {
     win_meter: String,
     air: String
 }
-async fn get_weather(location:String, app_id: String, app_secret: String) -> Weather {
+async fn get_weather_day(location:String, app_id: String, app_secret: String) -> Weather {
     let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(5)).build().expect("http client build error");
     let resp = client.get(&format!(
         "https://www.yiketianqi.com/free/day?appid={}&appsecret={}&unescape=1&cityid={}",app_id,app_secret,location
@@ -148,6 +162,71 @@ async fn get_weather(location:String, app_id: String, app_secret: String) -> Wea
     serde_json::from_str(&resp).expect("json decode error")
 }
 
+//画当前天气
+fn put_weather_day(img: &mut ImageBuffer<image::Luma<u8>, Vec<u8>>, w: &Weather) {
+    //图标
+    let icon = get_weather_img(&w.wea_img,80);
+    image::imageops::overlay(img, &icon, 6, 6);
+    //天气文字
+    drawing::draw_text_mut(img, BLACK, 60,78, Scale {x: 30.0,y: 30.0 }, &FONT_SARASA,&w.wea);
+    //温度
+    let offset = match w.tem.len() {
+        1 => 20,
+        2 => 10,
+        _ => 0
+    };
+    drawing::draw_text_mut(img, BLACK, offset,80, Scale {x: 50.0,y: 50.0 }, &FONT_SARASA,&w.tem);
+    drawing::draw_text_mut(img, BLACK, 60,100, Scale {x: 25.0,y: 25.0 }, &FONT_SOURCE,"℃");
+    //空气质量
+    let mut color = BLACK;
+    if w.air.parse::<u16>().unwrap() > 100 {
+        color = WHITE;
+        drawing::draw_filled_rect_mut(img, imageproc::rect::Rect::at(79, 105).of_size(41, 21), BLACK);
+    }
+    drawing::draw_text_mut(img, color, 80,106, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"空气质量");
+    drawing::draw_text_mut(img, color, 80,116, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"指数:");
+    drawing::draw_text_mut(img, color, 103,116, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.air);
+}
+
+/*
+"cityid":"101120101",
+"city":"济南",
+"update_time":"2020-04-21 17:24:11",
+"data":[
+    {
+        "date":"2020-04-21",
+        "wea":"晴",
+        "wea_img":"qing",
+        "tem_day":"17",
+        "tem_night":"4",
+        "win":"北风",
+        "win_speed":"3-4级"
+    },
+    ...
+格式：https://tianqiapi.com/index/doc?version=week
+*/
+#[derive(Debug,Serialize, Deserialize)]
+struct WeatherWeek {
+    city: String,
+    data: Vec<WeatherWeekDay>
+}
+#[derive(Debug,Serialize, Deserialize)]
+struct WeatherWeekDay {
+    date: String,    
+    wea: String,
+    wea_img: String,
+    tem_day: String,
+    tem_night: String,
+    win: String,
+    win_speed: String,
+}
+async fn get_weather_week(location:String, app_id: String, app_secret: String) -> WeatherWeek {
+    let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(5)).build().expect("http client build error");
+    let resp = client.get(&format!(
+        "https://www.yiketianqi.com/free/week?appid={}&appsecret={}&unescape=1&cityid={}",app_id,app_secret,location
+    )).send().await.expect("http send error").text().await.expect("http recv error");
+    serde_json::from_str(&resp).expect("json decode error")
+}
 
 //生成最终的图片序列
 fn generate_eink_bytes(img: &GrayImage)->Vec<u8>{
@@ -188,7 +267,7 @@ pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: Strin
     drawing::draw_text_mut(&mut img, BLACK, 120,98, Scale {x: 30.0,y: 30.0 }, &FONT_SARASA,
         &("星期".to_owned()+WEEK_NAME[time_now.weekday().num_days_from_monday() as usize]));
     //农历时间
-    drawing::draw_text_mut(&mut img, BLACK, 3 + 135,128, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&get_lunar(&lunar_now));
+    drawing::draw_text_mut(&mut img, BLACK, 2 + 135,128, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&get_lunar(&lunar_now));
     //日历的月份
     let offset = if time_now.month() > 10 {19 + 135} else {22 + 135};
     drawing::draw_text_mut(&mut img, BLACK, offset,140, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,
@@ -197,9 +276,10 @@ pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: Strin
     put_calender(&mut img,&time_now,135,150);
 
     ///////////////// 天气部分 ///////////////////////
-    //获取天气信息
-    //let weather = get_weather(location,app_id,app_secret).await;
-
+    //今日天气信息
+    put_weather_day(&mut img,&get_weather_day(location,app_id,app_secret).await);
+    //let weather = get_weather_week(location,app_id,app_secret).await;
+    //info!("{:?}",weather);
 
     //返回图片数据
     generate_eink_bytes(&img)
