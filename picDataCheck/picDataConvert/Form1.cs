@@ -32,7 +32,7 @@ namespace picDataConvert
             if(checkBox1.Checked)
                 client.BaseUrl = new Uri("http://127.0.0.1:23366/luatos-calendar/v1");
             else
-                client.BaseUrl = new Uri("https://qq.papapoi.com/luatos-calendar/v1");
+                client.BaseUrl = new Uri("http://api.papapoi.com/luatos-calendar/v1");
             var request = new RestRequest(RestSharp.Method.GET);
             request.AddParameter("mac", "test");
             request.AddParameter("battery", "50");
