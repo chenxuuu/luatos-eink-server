@@ -270,8 +270,8 @@ fn generate_eink_bytes(img: &GrayImage)->Vec<u8>{
             for i in 0..8 {
                 let p:u8 = img.get_pixel(l*8+i,y)[0];
                 //匹配像素点颜色
-                let t = if p < 127 {0}else{1};
-                temp+=t<<(7-i);
+                let t = if p > 127 {0}else{1};
+                temp+=t<<i;
             }
             r.push(temp);
         }
