@@ -247,12 +247,12 @@ fn put_weather_week(img: &mut ImageBuffer<image::Luma<u8>, Vec<u8>>, w: &Weather
     drawing::draw_text_mut(img, BLACK, 2,176, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"日");
     drawing::draw_text_mut(img, BLACK, 2,188, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,"夜");
     let tem_img = image::open(get_path()+"tem.png").unwrap().to_luma8();
-    image::imageops::overlay(img, &tem_img, 4 + 28, 176);
-    image::imageops::overlay(img, &tem_img, 4 + 28, 188);
-    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 28, 176);
-    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 28, 188);
-    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 40 + 4 + 28, 176);
-    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 40 + 4 + 28, 188);
+    image::imageops::overlay(img, &tem_img, 4 + 28, 177);
+    image::imageops::overlay(img, &tem_img, 4 + 28, 189);
+    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 28, 177);
+    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 28, 189);
+    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 40 + 4 + 28, 177);
+    image::imageops::overlay(img, &tem_img, 4 + 40 + 4 + 40 + 4 + 28, 189);
     drawing::draw_text_mut(img, BLACK, 4 + 12,176, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[0].tem_day);
     drawing::draw_text_mut(img, BLACK, 4 + 40 + 4 + 12,176, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[1].tem_day);
     drawing::draw_text_mut(img, BLACK, 4 + 40 + 4 + 40 + 4 + 12,176, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.data[2].tem_day);
