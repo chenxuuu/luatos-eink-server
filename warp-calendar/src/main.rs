@@ -21,7 +21,10 @@ struct LuatRequest {
 }
 
 async fn eink_server(d: LuatRequest) -> Result<impl warp::Reply, Infallible> {
-    Ok(calendar::get_img_vec(d.battery, d.location,d.appid,d.appsecret).await)
+    Ok(calendar::get_img_vec(d.battery, d.location,d.appid,d.appsecret, false).await)
+}
+async fn eink_server_png(d: LuatRequest) -> Result<impl warp::Reply, Infallible> {
+    Ok(calendar::get_img_vec(d.battery, d.location,d.appid,d.appsecret, true).await)
 }
 
 #[tokio::main]
@@ -33,11 +36,16 @@ async fn main() {
         .and(warp::path!("luatos-calendar" / "v1"))
         .and(warp::query::<LuatRequest>())
         .and_then(eink_server);
+    //返回图片的接口
+    let calendar_request_png = warp::get()
+        .and(warp::path!("luatos-calendar" / "v1" / "png"))
+        .and(warp::query::<LuatRequest>())
+        .and_then(eink_server_png);
 
     let port = std::env::args().nth(1).unwrap_or(String::from("23366"));
     let port = port.parse::<u16>().expect(&format!("error port number {}!",port));
     info!("server start at port {} !", port);
-    warp::serve(calendar_request)
+    warp::serve(calendar_request.or(calendar_request_png))
         .run(([0,0,0,0], port))
         .await
 }

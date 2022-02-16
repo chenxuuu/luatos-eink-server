@@ -1,7 +1,7 @@
-use std::{io::Read, vec};
+use std::io::Read;
 use chrono::{DateTime, Datelike, NaiveDate};
 use lazy_static::lazy_static;
-use image::{ImageBuffer, GrayImage};
+use image::{ImageBuffer, GrayImage, DynamicImage};
 use imageproc::drawing;
 use log::info;
 use rusttype::{Font, Scale};
@@ -279,7 +279,16 @@ fn generate_eink_bytes(img: &GrayImage)->Vec<u8>{
     r
 }
 
-pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: String) -> Vec<u8>{
+//直接生成png结果
+fn generate_png_bytes(img: GrayImage)->Vec<u8>{
+    let mut bytes: Vec<u8> = Vec::new();
+    let buff = DynamicImage::ImageLuma8(img);
+    buff.write_to(&mut bytes, image::ImageOutputFormat::Png).expect("Unable to write");
+    info!("png!!!");
+    bytes
+}
+
+pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: String, png: bool) -> Vec<u8>{
     //获取当前时间
     let time_now = chrono::Local::now();
     let lunar_now = LunarDate::from_solar_date(time_now.year(),time_now.month(),time_now.day()).unwrap();
@@ -315,7 +324,11 @@ pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: Strin
     put_weather_week(&mut img,&get_weather_week(&location,&app_id,&app_secret).await);
 
     //返回图片数据
-    generate_eink_bytes(&img)
+    if png {
+        generate_png_bytes(img)
+    } else {
+        generate_eink_bytes(&img)
+    }
 }
 
 
