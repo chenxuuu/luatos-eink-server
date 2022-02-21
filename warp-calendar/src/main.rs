@@ -43,11 +43,17 @@ async fn main() {
         .and(warp::query::<LuatRequest>())
         .and(warp::addr::remote())
         .and_then(eink_server_png);
+    //查询城市的接口
+    let check_city = warp::get()
+        .and(warp::path("luatos-calendar")).and(warp::path("v1")).and(warp::path("check-city"))
+        .and(warp::fs::dir(format!("{}html/check-city",calendar::get_path())));
 
     let port = std::env::args().nth(1).unwrap_or(String::from("23366"));
     let port = port.parse::<u16>().expect(&format!("error port number {}!",port));
     info!("server start at port {} !", port);
-    warp::serve(calendar_request.or(calendar_request_png))
+    warp::serve(calendar_request
+            .or(calendar_request_png)
+            .or(check_city))
         .run(([0,0,0,0], port))
         .await
 }

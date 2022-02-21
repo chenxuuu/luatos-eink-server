@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>查询城市id</title>
+    <meta name="author" content="chenxuuu">
+    <link href="bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <h3>
+                    查询城市id工具
+                </h3>
+                <div class="alert alert-warning alert-dismissable">
+                    <h4>友情提示</h4>
+                    如有bug，请到<a href="https://gitee.com/chenxuuu/luatos-eink-server">此处</a>反馈
+                </div>
+                <div class="form-group">
+                    <label>
+                        想查询的城市
+                    </label>
+                    <input type="text" class="form-control" id="cityText" autofocus placeholder="输入你想查询的城市"
+                    oninput="getResult()" onporpertychange="getResult()">
+                </div>
+                <div>
+                    查询结果：
+                </div>
+                <div class="form-group">
+                    <label id="resultShow"></label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="jquery.min.js"></script>
+    <script src="bootstrap.min.js"></script>
+    <script src="citys.js"></script>
+    <script>
+function getResult(){
+    var check = $("#cityText").val().toLowerCase();
+    if(check.length == 0)
+    {
+        $("#resultShow").html("请输入查询城市的名称或拼音");
+        return;
+    }
+    var result = [];
+    citys.forEach(c => {
+        if(c.cityEn.includes(check) || c.cityZh.includes(check) || 
+        c.leaderEn.includes(check) || c.leaderZh.includes(check) ||
+        c.provinceEn.includes(check) || c.provinceZh.includes(check))
+        {
+            result.push(c);
+        }
+    });
+    var rs = "";
+    result.forEach(c => {
+        rs += c.provinceZh + " " + c.leaderZh + " " + c.cityZh + "：" + c.id + "<br>";
+    });
+    $("#resultShow").html(rs);
+}
+getResult();
+    </script>
+</body>
+
+</html>
