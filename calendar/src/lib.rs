@@ -167,6 +167,8 @@ fn put_weather_day(img: &mut ImageBuffer<image::Luma<u8>, Vec<u8>>, w: &Weather)
     //图标
     let icon = get_weather_img(&w.wea_img,80);
     image::imageops::overlay(img, &icon, 6, 3);
+    //城市名
+    drawing::draw_text_mut(img, BLACK, 0,0, Scale {x: 11.0,y: 11.0 }, &FONT_PIXEL,&w.city);
     //天气文字
     drawing::draw_text_mut(img, BLACK, 60,75, Scale {x: 30.0,y: 30.0 }, &FONT_SARASA,&w.wea);
     //温度
