@@ -1,4 +1,4 @@
-use std::convert::Infallible;
+use std::{convert::Infallible, net::SocketAddr};
 
 use calendar;
 use log::info;
@@ -13,18 +13,18 @@ struct LuatRequest {
     battery: u8,
     //位置城市ID：https://yikeapi.com/help/tianqicity
     //如上海：101020100
-    location: String,
+    location: Option<String>,
     //appid
     appid: String, 
     //appsecret
     appsecret: String,
 }
 
-async fn eink_server(d: LuatRequest) -> Result<impl warp::Reply, Infallible> {
-    Ok(calendar::get_img_vec(d.battery, d.location,d.appid,d.appsecret, false).await)
+async fn eink_server(d: LuatRequest, ip: Option<SocketAddr>) -> Result<impl warp::Reply, Infallible> {
+    Ok(calendar::get_img_vec(d.battery, d.location,d.appid,d.appsecret, false, ip).await)
 }
-async fn eink_server_png(d: LuatRequest) -> Result<impl warp::Reply, Infallible> {
-    Ok(calendar::get_img_vec(d.battery, d.location,d.appid,d.appsecret, true).await)
+async fn eink_server_png(d: LuatRequest, ip: Option<SocketAddr>) -> Result<impl warp::Reply, Infallible> {
+    Ok(calendar::get_img_vec(d.battery, d.location,d.appid,d.appsecret, true, ip).await)
 }
 
 #[tokio::main]
@@ -35,11 +35,13 @@ async fn main() {
     let calendar_request = warp::get()
         .and(warp::path!("luatos-calendar" / "v1"))
         .and(warp::query::<LuatRequest>())
+        .and(warp::addr::remote())
         .and_then(eink_server);
     //返回图片的接口
     let calendar_request_png = warp::get()
         .and(warp::path!("luatos-calendar" / "v1" / "png"))
         .and(warp::query::<LuatRequest>())
+        .and(warp::addr::remote())
         .and_then(eink_server_png);
 
     let port = std::env::args().nth(1).unwrap_or(String::from("23366"));

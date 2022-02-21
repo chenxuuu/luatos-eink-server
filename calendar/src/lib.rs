@@ -154,10 +154,10 @@ struct Weather {
     win_meter: String,
     air: String
 }
-async fn get_weather_day(location: &str, app_id: &str, app_secret: &str) -> Weather {
+async fn get_weather_day(loc: &str, app_id: &str, app_secret: &str) -> Weather {
     let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(5)).build().expect("http client build error");
     let resp = client.get(&format!(
-        "https://www.yiketianqi.com/free/day?appid={}&appsecret={}&unescape=1&cityid={}",app_id,app_secret,location
+        "https://www.yiketianqi.com/free/day?appid={}&appsecret={}&unescape=1&{}",app_id,app_secret,loc
     )).send().await.expect("http send error").text().await.expect("http recv error");
     serde_json::from_str(&resp).expect("json decode error")
 }
@@ -225,10 +225,10 @@ struct WeatherWeekDay {
     win: String,
     win_speed: String,
 }
-async fn get_weather_week(location: &str, app_id: &str, app_secret: &str) -> WeatherWeek {
+async fn get_weather_week(loc: &str, app_id: &str, app_secret: &str) -> WeatherWeek {
     let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(5)).build().expect("http client build error");
     let resp = client.get(&format!(
-        "https://www.yiketianqi.com/free/week?appid={}&appsecret={}&unescape=1&cityid={}",app_id,app_secret,location
+        "https://www.yiketianqi.com/free/week?appid={}&appsecret={}&unescape=1&{}",app_id,app_secret,loc
     )).send().await.expect("http send error").text().await.expect("http recv error");
     serde_json::from_str(&resp).expect("json decode error")
 }
@@ -288,7 +288,7 @@ fn generate_png_bytes(img: GrayImage)->Vec<u8>{
     bytes
 }
 
-pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: String, png: bool) -> Vec<u8>{
+pub async fn get_img_vec(_v:u8, location: Option<String>, app_id: String, app_secret: String, png: bool, ip: Option<std::net::SocketAddr>) -> Vec<u8>{
     //获取当前时间
     let time_now = chrono::Local::now();
     let lunar_now = LunarDate::from_solar_date(time_now.year(),time_now.month(),time_now.day()).unwrap();
@@ -318,10 +318,19 @@ pub async fn get_img_vec(v:u8,location:String, app_id: String, app_secret: Strin
     put_calender(&mut img,&time_now,135,150);
 
     ///////////////// 天气部分 ///////////////////////
+    //获取ip或者城市参数
+    let addr = if let Some(loc) = location {
+        format!("city={}",loc)
+    } else {
+        match ip {
+            Some(ip) if ip.is_ipv4() => format!("ip={}",ip.ip().to_string()),
+            _ => return "not found location".as_bytes().into()
+        }
+    };
     //今日天气信息
-    put_weather_day(&mut img,&get_weather_day(&location,&app_id,&app_secret).await);
+    put_weather_day(&mut img,&get_weather_day(&addr,&app_id,&app_secret).await);
     //三天天气信息
-    put_weather_week(&mut img,&get_weather_week(&location,&app_id,&app_secret).await);
+    put_weather_week(&mut img,&get_weather_week(&addr,&app_id,&app_secret).await);
 
     //返回图片数据
     if png {
