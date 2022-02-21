@@ -36,7 +36,7 @@ namespace picDataConvert
             var request = new RestRequest(RestSharp.Method.GET);
             request.AddParameter("mac", "test");
             request.AddParameter("battery", "50");
-            request.AddParameter("location", "101020100");
+            //request.AddParameter("location", "101020100");
             request.AddParameter("appid", "27548549");
             request.AddParameter("appsecret", "rEi9nRak");
             var response = client.Execute(request);
@@ -54,13 +54,13 @@ namespace picDataConvert
                 int x = i % 25 * 8;
                 for (int b = 0; b < 8; b++)
                 {
-                    int bit = (now1 >> (7 - b)) & 1;
+                    int bit = (now1 >> b) & 1;
                     switch (bit)
                     {
-                        case 0:
+                        case 1:
                             g.FillRectangle(Brushes.Black, (x + b) * size, y * size, size, size);
                             break;
-                        case 1:
+                        case 0:
                             g.FillRectangle(Brushes.White, (x + b) * size, y * size, size, size);
                             break;
                     }
