@@ -322,7 +322,7 @@ pub async fn get_img_vec(_v:u8, location: Option<String>, app_id: String, app_se
     ///////////////// 天气部分 ///////////////////////
     //获取ip或者城市参数
     let addr = if let Some(loc) = location {
-        format!("city={}",loc)
+        format!("cityid={}",loc)
     } else {
         match ip {
             Some(ip) if ip.is_ipv4() => format!("ip={}",ip.ip().to_string()),
