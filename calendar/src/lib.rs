@@ -301,8 +301,14 @@ pub async fn get_img_vec(_v:u8, location: Option<String>, app_id: String, app_se
 
     ///////////////// 日历部分 ///////////////////
     //日期
-    drawing::draw_text_mut(&mut img, BLACK, 100,0, Scale {x: 121.0,y: 121.0 }, &FONT_SARASA,
-        &time_now.day().to_string());
+    let day = time_now.day();
+    if day >= 10 {
+        drawing::draw_text_mut(&mut img, BLACK, 100,0, Scale {x: 121.0,y: 121.0 }, &FONT_SARASA,
+            &day.to_string());
+    } else {
+        drawing::draw_text_mut(&mut img, BLACK, 128,0, Scale {x: 121.0,y: 121.0 }, &FONT_SARASA,
+            &day.to_string());
+    }
     //年月
     drawing::draw_text_mut(&mut img, BLACK, 107,1, Scale {x: 21.0,y: 21.0 }, &FONT_SARASA,
         &(time_now.year().to_string()+"年 "+&time_now.month().to_string()+"月")
