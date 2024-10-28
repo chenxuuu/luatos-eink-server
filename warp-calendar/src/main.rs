@@ -15,7 +15,7 @@ struct LuatRequest {
     //如上海：101020100
     location: Option<String>,
     //appid
-    appid: String, 
+    appid: String,
     //appsecret
     appsecret: String,
 }

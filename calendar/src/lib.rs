@@ -219,7 +219,7 @@ struct WeatherWeek {
 }
 #[derive(Debug,Serialize, Deserialize)]
 struct WeatherWeekDay {
-    date: String,    
+    date: String,
     wea: String,
     wea_img: String,
     tem_day: String,

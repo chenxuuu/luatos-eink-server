@@ -33,6 +33,8 @@ namespace picDataConvert
                 client.BaseUrl = new Uri("http://127.0.0.1:23366/luatos-calendar/v1");
             else
                 client.BaseUrl = new Uri("http://api.papapoi.com/luatos-calendar/v1");
+            if(textBox1.Text.Trim().Length > 0)
+                client.BaseUrl = new Uri(textBox1.Text.Trim());
             var request = new RestRequest(RestSharp.Method.GET);
             request.AddParameter("mac", "test");
             request.AddParameter("battery", "50");
